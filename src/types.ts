@@ -5,6 +5,13 @@ export enum Currency {
   TRY = 'TRY',
 }
 
+export enum Theme {
+  EMERALD = 'EMERALD', // الزمردي (الأصلي)
+  MIDNIGHT = 'MIDNIGHT', // ليلي ملكي
+  AMETHYST = 'AMETHYST', // الجمشت البنفسجي
+  ONYX = 'ONYX', // العقيق والذهب
+}
+
 export enum SubscriptionTier {
   FREE = 'FREE',
   BASIC = 'BASIC',
@@ -32,6 +39,7 @@ export interface Product {
 export interface AppState {
   products: Product[];
   currency: Currency;
+  theme: Theme;
   tier: SubscriptionTier;
   exchangeRates: Record<Currency, number>;
 }

@@ -25,10 +25,11 @@ import {
   LogOut,
   User,
   Star,
-  Share2
+  Share2,
+  Palette
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
-import { ItemType, Currency, Product, SubscriptionTier } from './types';
+import { ItemType, Currency, Product, SubscriptionTier, Theme } from './types';
 import { 
   DEFAULT_EXCHANGE_RATES, 
   CURRENCY_SYMBOLS, 
@@ -111,6 +112,7 @@ export default function App() {
   const [addingType, setAddingType] = useState<ItemType>(ItemType.PRODUCT);
   const [products, setProducts] = useState<Product[]>([]);
   const [currency, setCurrency] = useState<Currency>(Currency.IQD);
+  const [theme, setTheme] = useState<Theme>(Theme.EMERALD);
   const [tier, setTier] = useState<SubscriptionTier>(SubscriptionTier.FREE);
   const [username, setUsername] = useState<string>('');
   const [showProModal, setShowProModal] = useState(false);
@@ -118,6 +120,7 @@ export default function App() {
   const [proCode, setProCode] = useState('');
   const [activatingTier, setActivatingTier] = useState<SubscriptionTier | null>(null);
   const [activationInput, setActivationInput] = useState('');
+  const [showThemeModal, setShowThemeModal] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
@@ -132,6 +135,11 @@ export default function App() {
     return () => unsubscribe();
   }, []);
 
+  // Theme Apply
+  useEffect(() => {
+    document.documentElement.setAttribute('data-theme', theme);
+  }, [theme]);
+
   // Sync Data on Login/Logout
   useEffect(() => {
     if (user) {
@@ -145,6 +153,7 @@ export default function App() {
       if (localSettings) {
         const data = JSON.parse(localSettings);
         if (data.currency) setCurrency(data.currency as Currency);
+        if (data.theme) setTheme(data.theme as Theme);
         if (data.tier) setTier(data.tier as SubscriptionTier);
         if (data.username) setUsername(data.username as string);
       }
@@ -178,12 +187,14 @@ export default function App() {
       if (docSnap.exists()) {
         const data = docSnap.data();
         if (data.currency) setCurrency(data.currency as Currency);
+        if (data.theme) setTheme(data.theme as Theme);
         if (data.tier) setTier(data.tier as SubscriptionTier);
         if (data.username) setUsername(data.username as string);
         
         // Cache locally
         localStorage.setItem('rabihy_settings', JSON.stringify({
           currency: data.currency,
+          theme: data.theme,
           tier: data.tier,
           username: data.username
         }));
@@ -267,10 +278,11 @@ export default function App() {
     }
   };
 
-  const updateRemoteSettings = async (newCurrency: Currency, newTier: SubscriptionTier, newUsername: string = username) => {
+  const updateRemoteSettings = async (newCurrency: Currency, newTier: SubscriptionTier, newTheme: Theme = theme, newUsername: string = username) => {
     // Save to LocalStorage first
     localStorage.setItem('rabihy_settings', JSON.stringify({
       currency: newCurrency,
+      theme: newTheme,
       tier: newTier,
       username: newUsername
     }));
@@ -279,6 +291,7 @@ export default function App() {
     try {
       await setDoc(doc(db, 'users', auth.currentUser.uid, 'settings', 'state'), {
         currency: newCurrency,
+        theme: newTheme,
         tier: newTier,
         username: newUsername,
         userId: auth.currentUser.uid
@@ -290,12 +303,17 @@ export default function App() {
 
   const handleCurrencyChange = (c: Currency) => {
     setCurrency(c);
-    updateRemoteSettings(c, tier, username);
+    updateRemoteSettings(c, tier, theme, username);
+  };
+
+  const handleThemeChange = (t: Theme) => {
+    setTheme(t);
+    updateRemoteSettings(currency, tier, t, username);
   };
 
   const handleUsernameChange = (name: string) => {
     setUsername(name);
-    updateRemoteSettings(currency, tier, name);
+    updateRemoteSettings(currency, tier, theme, name);
   };
 
   const convertValue = (val: number) => {
@@ -464,21 +482,21 @@ export default function App() {
 
   if (authLoading) {
     return (
-      <div className="min-h-screen bg-[#0a1510] flex items-center justify-center">
+      <div className="min-h-screen bg-surface-deep flex items-center justify-center">
         <motion.div 
           animate={{ rotate: 360 }}
           transition={{ repeat: Infinity, duration: 1, ease: "linear" }}
-          className="w-12 h-12 border-4 border-emerald-500 border-t-transparent rounded-full"
+          className="w-12 h-12 border-4 border-brand border-t-transparent rounded-full"
         />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-[#0a1510] font-sans text-white pb-28" dir="rtl">
+    <div className="min-h-screen bg-surface-deep font-sans text-white pb-28" dir="rtl">
       {/* Header */}
-      <header className="bg-[#0d1f18] text-white p-6 rounded-b-[2.5rem] shadow-2xl sticky top-0 z-10 overflow-hidden border-b border-emerald-900/30">
-        <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/5 rounded-full -mr-16 -mt-16 blur-3xl"></div>
+      <header className="bg-surface-card text-white p-6 rounded-b-[2.5rem] shadow-2xl sticky top-0 z-10 overflow-hidden border-b border-accent-border">
+        <div className="absolute top-0 right-0 w-32 h-32 bg-brand/5 rounded-full -mr-16 -mt-16 blur-3xl"></div>
         <div className="relative flex justify-between items-center">
           <div className="flex items-center gap-3">
             {screen !== 'dashboard' && (
@@ -489,20 +507,20 @@ export default function App() {
                   setScreen('dashboard');
                   setEditingProduct(null);
                 }}
-                className="bg-emerald-500/10 p-3 rounded-2xl backdrop-blur-md ring-1 ring-emerald-500/30 hover:bg-emerald-500/20 transition-all ml-4 group flex items-center gap-2"
+                className="bg-brand/10 p-3 rounded-2xl backdrop-blur-md ring-1 ring-brand/30 hover:bg-brand/20 transition-all ml-4 group flex items-center gap-2"
               >
-                <ArrowRight className="text-emerald-400 group-hover:-translate-x-1 transition-transform" size={22} />
-                <span className="text-[10px] font-black uppercase text-emerald-400">رجوع</span>
+                <ArrowRight className="text-brand group-hover:-translate-x-1 transition-transform" size={22} />
+                <span className="text-[10px] font-black uppercase text-brand">رجوع</span>
               </motion.button>
             )}
             <div className="bg-white/10 p-2.5 rounded-2xl backdrop-blur-md ring-1 ring-white/20">
-              <Calculator className="text-emerald-400" size={28} />
+              <Calculator className="text-brand" size={28} />
             </div>
             <div>
               <h1 className="text-2xl font-black tracking-tight leading-none mb-1">
                 ربحي
               </h1>
-              <p className="text-emerald-300/80 text-[10px] font-bold uppercase tracking-widest">
+              <p className="text-brand/80 text-[10px] font-bold uppercase tracking-widest">
                 حاسبة أرباح المحل
               </p>
             </div>
@@ -538,21 +556,21 @@ export default function App() {
                 <motion.div 
                   initial={{ scale: 0.9, opacity: 0 }}
                   animate={{ scale: 1, opacity: 1 }}
-                  className="bg-gradient-to-br from-[#122b22] to-[#0a1510] text-emerald-50 p-6 rounded-[2.5rem] shadow-[0_20px_50px_rgba(0,0,0,0.4)] relative overflow-hidden group border border-emerald-500/20"
+                  className="bg-gradient-to-br from-surface-card to-surface-deep text-white p-6 rounded-[2.5rem] shadow-[0_20px_50px_rgba(0,0,0,0.4)] relative overflow-hidden group border border-brand/20"
                 >
-                  <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-br from-emerald-500/5 to-transparent"></div>
-                  <div className="absolute -bottom-10 -right-10 w-40 h-40 bg-emerald-500/5 rounded-full blur-3xl transition-transform group-hover:scale-150 duration-700"></div>
+                  <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-br from-brand/5 to-transparent"></div>
+                  <div className="absolute -bottom-10 -right-10 w-40 h-40 bg-brand/5 rounded-full blur-3xl transition-transform group-hover:scale-150 duration-700"></div>
                   <div className="relative">
                     <div className="flex justify-between items-start mb-4">
-                      <span className="bg-emerald-500/20 text-emerald-400 px-3.5 py-1 rounded-full text-[10px] uppercase font-black tracking-widest ring-1 ring-emerald-500/30">
+                      <span className="bg-brand/20 text-brand px-3.5 py-1 rounded-full text-[10px] uppercase font-black tracking-widest ring-1 ring-brand/30">
                         الأكثر ربحاً
                       </span>
-                      <BarChart3 size={20} className="text-emerald-500/40" />
+                      <BarChart3 size={20} className="text-brand/40" />
                     </div>
                     <h3 className="text-2xl font-black mb-1">{stats.mostProfitable.name}</h3>
                     <div className="flex justify-between items-end mt-4">
                       <div>
-                        <p className="text-emerald-500/40 text-[10px] font-bold uppercase tracking-widest mb-1 leading-none">إجمالي الأرباح</p>
+                        <p className="text-brand/40 text-[10px] font-bold uppercase tracking-widest mb-1 leading-none">إجمالي الأرباح</p>
                         <p className="text-3xl font-black text-white drop-shadow-[0_0_15px_rgba(255,255,255,0.1)]">
                           {(() => {
                             const p = stats.mostProfitable;
@@ -563,8 +581,8 @@ export default function App() {
                           })()}
                         </p>
                       </div>
-                      <div className="w-12 h-12 bg-emerald-500/20 rounded-2xl flex items-center justify-center backdrop-blur-md border border-emerald-500/30">
-                        <Wallet className="text-emerald-400" size={24} />
+                      <div className="w-12 h-12 bg-brand/20 rounded-2xl flex items-center justify-center backdrop-blur-md border border-brand/30">
+                        <Wallet className="text-brand" size={24} />
                       </div>
                     </div>
                   </div>
@@ -575,12 +593,12 @@ export default function App() {
               <div className="space-y-4">
                 <div className="flex flex-col gap-4 px-2">
                   <div className="flex justify-between items-center">
-                    <h2 className="text-lg font-black text-emerald-100 flex items-center gap-2">
-                      <Package size={20} className="text-emerald-500" />
+                    <h2 className="text-lg font-black text-white flex items-center gap-2">
+                      <Package size={20} className="text-brand" />
                       الصناديق
                     </h2>
                     {tier !== SubscriptionTier.PREMIUM && (
-                      <span className="text-[10px] font-bold bg-emerald-900/40 text-emerald-400 px-2.5 py-1 rounded-full border border-emerald-500/20">
+                      <span className="text-[10px] font-bold bg-brand/10 text-brand px-2.5 py-1 rounded-full border border-brand/20">
                         {products.length} / {tier === SubscriptionTier.FREE ? 3 : tier === SubscriptionTier.BASIC ? 20 : 100} صناديق
                       </span>
                     )}
@@ -593,16 +611,16 @@ export default function App() {
                         placeholder="بحث عن صندوق..." 
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
-                        className="w-full bg-[#122b22]/40 border border-emerald-900/30 rounded-2xl py-3 px-4 pr-10 text-xs font-bold text-white placeholder:text-emerald-900 focus:outline-none focus:border-emerald-500 transition-all"
+                        className="w-full bg-surface-card/40 border border-accent-border rounded-2xl py-3 px-4 pr-10 text-xs font-bold text-white placeholder:text-brand/40 focus:outline-none focus:border-brand transition-all"
                       />
-                      <div className="absolute right-3 top-1/2 -translate-y-1/2 text-emerald-900">
+                      <div className="absolute right-3 top-1/2 -translate-y-1/2 text-brand/40">
                         <BarChart3 size={16} className="rotate-90" />
                       </div>
                     </div>
                     <select 
                       value={sortBy}
                       onChange={(e) => setSortBy(e.target.value as any)}
-                      className="bg-[#122b22]/40 border border-emerald-900/30 rounded-2xl px-4 py-3 text-[10px] font-black text-emerald-400 focus:outline-none focus:border-emerald-500 transition-colors appearance-none cursor-pointer"
+                      className="bg-surface-card/40 border border-accent-border rounded-2xl px-4 py-3 text-[10px] font-black text-brand focus:outline-none focus:border-brand transition-colors appearance-none cursor-pointer"
                     >
                       <option value="date">الأحدث</option>
                       <option value="name">الاسم</option>
@@ -612,11 +630,11 @@ export default function App() {
                 </div>
 
                 {sortedAndFilteredProducts.length === 0 ? (
-                  <div className="bg-[#122b22]/30 border-2 border-dashed border-emerald-900/30 rounded-[2.5rem] py-16 px-8 text-center">
-                    <div className="w-20 h-20 bg-emerald-900/20 rounded-full flex items-center justify-center mx-auto mb-6">
-                      <Package size={40} className="text-emerald-800" />
+                  <div className="bg-surface-card/30 border-2 border-dashed border-accent-border rounded-[2.5rem] py-16 px-8 text-center">
+                    <div className="w-20 h-20 bg-brand/10 rounded-full flex items-center justify-center mx-auto mb-6">
+                      <Package size={40} className="text-brand/20" />
                     </div>
-                    <h4 className="font-bold text-emerald-100 mb-2">
+                    <h4 className="font-bold text-white mb-2">
                       {searchQuery ? 'لا توجد نتائج للبحث' : 'لا توجد منتجات'}
                     </h4>
                     <p className="text-xs text-slate-500">
@@ -632,19 +650,19 @@ export default function App() {
                         transition={{ delay: idx * 0.05 }}
                         key={p.id} 
                         onClick={() => startEditing(p)}
-                        className="bg-[#122b22]/40 p-4 rounded-3xl shadow-xl border border-emerald-900/20 flex items-center justify-between group hover:border-emerald-500/40 transition-all hover:bg-[#122b22]/60 cursor-pointer active:scale-[0.99]"
+                        className="bg-surface-card/40 p-4 rounded-3xl shadow-xl border border-accent-border flex items-center justify-between group hover:border-brand/40 transition-all hover:bg-surface-card/60 cursor-pointer active:scale-[0.99]"
                       >
                         <div className="flex items-center gap-4 flex-1">
-                          <div className="w-14 h-14 bg-[#0a1510] rounded-2xl flex items-center justify-center text-emerald-600 group-hover:bg-emerald-500 group-hover:text-white transition-all transform group-hover:rotate-6 shadow-inner border border-emerald-900/50 shrink-0">
+                          <div className="w-14 h-14 bg-surface-deep rounded-2xl flex items-center justify-center text-brand transition-all transform group-hover:rotate-6 shadow-inner border border-accent-border shrink-0">
                             <Package size={24} />
                           </div>
                           <div className="min-w-0">
                             <h4 className="font-black text-white leading-tight mb-1 truncate">{p.name}</h4>
                             <div className="flex items-center gap-2">
-                              <span className="text-[10px] font-bold text-emerald-400/60 bg-emerald-950 px-2 py-0.5 rounded-md uppercase border border-emerald-900/30">
+                              <span className="text-[10px] font-bold text-brand bg-brand/5 px-2 py-0.5 rounded-md uppercase border border-brand/10">
                                 {p.quantity} قطعة
                               </span>
-                              <span className="text-[10px] font-bold text-emerald-300 bg-emerald-500/10 px-2 py-0.5 rounded-md">
+                              <span className="text-[10px] font-bold text-brand/80 bg-brand/5 px-2 py-0.5 rounded-md">
                                 {formatCurrency(p.sellingPrice)}
                               </span>
                             </div>
@@ -652,23 +670,23 @@ export default function App() {
                         </div>
                         <div className="flex items-center gap-2">
                           <div className="text-left hidden xs:flex flex-col items-end">
-                            <div className="bg-emerald-500/10 text-emerald-400 px-3 py-1 rounded-xl border border-emerald-500/20">
+                            <div className="bg-brand/10 text-brand px-3 py-1 rounded-xl border border-brand/20">
                               <span className="text-[10px] font-black block leading-none mb-1 opacity-50">الربح</span>
                               <span className="text-sm font-black italic">
                                 +{formatCurrency((p.sellingPrice - p.purchasePrice - p.expenses) * p.quantity)}
                               </span>
                             </div>
                           </div>
-                          <div className="flex gap-1.5 bg-[#0a1510]/50 p-1 rounded-2xl border border-emerald-900/30">
+                          <div className="flex gap-1.5 bg-surface-deep/50 p-1 rounded-2xl border border-accent-border">
                              <button 
                                type="button"
                                onClick={(e) => { e.stopPropagation(); startEditing(p); }} 
-                               className="p-2 text-emerald-500 hover:bg-emerald-500/20 rounded-xl transition-all active:scale-90"
+                               className="p-2 text-brand hover:bg-brand/20 rounded-xl transition-all active:scale-90"
                                title="تعديل"
                              >
                                <RefreshCw size={18} />
                              </button>
-                             <div className="w-[1px] h-6 bg-emerald-900/30 self-center"></div>
+                             <div className="w-[1px] h-6 bg-accent-border self-center"></div>
                              <button 
                                type="button"
                                onClick={(e) => { e.stopPropagation(); setConfirmDeleteId(p.id); }} 
@@ -722,8 +740,8 @@ export default function App() {
             >
               <div className="flex items-center justify-between gap-3 mb-8">
                  <div className="flex items-center gap-3">
-                   <div className="w-12 h-12 bg-emerald-500 rounded-2xl flex items-center justify-center shadow-[0_0_15px_rgba(16,185,129,0.4)]">
-                     <Settings size={24} className="text-white" />
+                   <div className="w-12 h-12 bg-brand rounded-2xl flex items-center justify-center shadow-[0_0_15px_rgba(var(--theme-brand-rgb),0.4)]">
+                     <Settings size={24} className="text-slate-900" />
                    </div>
                    <h2 className="text-2xl font-black text-white">الإعدادات</h2>
                  </div>
@@ -732,7 +750,7 @@ export default function App() {
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.95 }}
                     onClick={() => setScreen('dashboard')}
-                    className="bg-white/5 p-3 rounded-2xl border border-white/10 text-emerald-400 flex items-center gap-2 text-xs font-black"
+                    className="bg-white/5 p-3 rounded-2xl border border-white/10 text-brand flex items-center gap-2 text-xs font-black"
                  >
                     <ArrowRight size={18} />
                     <span>رجوع</span>
@@ -760,36 +778,43 @@ export default function App() {
                   subLabel="تواصل معنا عبر واتساب"
                   href={getWhatsAppUrl("أحتاج لمساعدة في تطبيق ربحي")}
                 />
+
+                <SettingsButton 
+                  icon={<Palette size={22} className="text-brand" />} 
+                  label="سمات البرنامج" 
+                  subLabel="تخصيص ألوان التطبيق"
+                  onClick={() => setShowThemeModal(true)} 
+                />
               </div>
 
-              <div className="bg-gradient-to-br from-emerald-900 to-emerald-950 p-8 rounded-[2.5rem] text-white shadow-2xl relative overflow-hidden mt-8 border border-white/10">
-                <div className="absolute top-0 right-0 w-40 h-40 bg-emerald-400/10 rounded-full -mr-20 -mt-20 blur-3xl"></div>
+              <div className="bg-gradient-to-br from-brand to-brand/80 p-8 rounded-[2.5rem] text-slate-900 shadow-2xl relative overflow-hidden mt-8 border border-white/10">
+                <div className="absolute top-0 right-0 w-40 h-40 bg-white/20 rounded-full -mr-20 -mt-20 blur-3xl"></div>
                 <div className="relative">
                   <div className="flex items-center gap-4 mb-6">
-                    <div className="w-16 h-16 bg-white/10 backdrop-blur-xl rounded-3xl flex items-center justify-center border border-white/20">
-                      <Calculator size={36} className="text-emerald-400" />
+                    <div className="w-16 h-16 bg-white/20 backdrop-blur-xl rounded-3xl flex items-center justify-center border border-white/40">
+                      <Calculator size={36} className="text-slate-900" />
                     </div>
                     <div>
                       <h3 className="text-xl font-black mb-1">تطبيق ربحي</h3>
-                      <p className="text-[10px] text-emerald-300 font-bold uppercase tracking-[0.2em]">الإصدار 1.0.0</p>
+                      <p className="text-[10px] text-slate-800 font-bold uppercase tracking-[0.2em]">الإصدار 1.0.0</p>
                     </div>
                   </div>
-                  <p className="text-sm text-emerald-100/70 leading-relaxed mb-6 font-medium">
-                    برمجة وتطوير <span className="text-white font-black underline underline-offset-4 decoration-amber-500">{WHATSAPP_CONTACT_NAME}</span>. نهدف لتوفير أفضل الأدوات المالية لأصحاب المحلات في العراق.
+                  <p className="text-sm text-slate-800 leading-relaxed mb-6 font-bold">
+                    برمجة وتطوير <span className="text-slate-900 font-black underline underline-offset-4 decoration-white">{WHATSAPP_CONTACT_NAME}</span>. نهدف لتوفير أفضل الأدوات المالية لأصحاب المحلات في العراق.
                   </p>
                   <div className="flex gap-4">
                     <button 
                       onClick={handleShare}
-                      className="flex-1 bg-white/10 border border-white/20 py-3 rounded-2xl text-xs font-black uppercase tracking-wider backdrop-blur-md active:scale-95 transition-all flex items-center justify-center gap-2"
+                      className="flex-1 bg-white/20 border border-white/30 py-3 rounded-2xl text-[10px] font-black uppercase tracking-wider backdrop-blur-md active:scale-95 transition-all flex items-center justify-center gap-2"
                     >
                       <Share2 size={16} />
                       مشاركة
                     </button>
                     <button 
                       onClick={() => setShowRateModal(true)}
-                      className="flex-1 bg-emerald-500 py-3 rounded-2xl text-xs font-black uppercase tracking-wider shadow-lg shadow-emerald-500/20 active:scale-95 transition-all flex items-center justify-center gap-2"
+                      className="flex-1 bg-slate-900 py-3 rounded-2xl text-[10px] font-black uppercase tracking-wider shadow-lg active:scale-95 transition-all flex items-center justify-center gap-2 text-white"
                     >
-                      <Star size={16} className="fill-slate-900" />
+                      <Star size={16} className="fill-brand text-brand" />
                       تقييم
                     </button>
                   </div>
@@ -801,14 +826,14 @@ export default function App() {
       </main>
 
       {/* Navigation Bar */}
-      <nav className="fixed bottom-6 left-6 right-6 bg-[#0d1f18]/90 backdrop-blur-xl rounded-[2.5rem] py-4 px-8 flex justify-around items-center z-20 shadow-[0_20px_50px_rgba(0,0,0,0.5)] border border-emerald-500/20">
+      <nav className="fixed bottom-6 left-6 right-6 bg-surface-card/90 backdrop-blur-xl rounded-[2.5rem] py-4 px-8 flex justify-around items-center z-20 shadow-[0_20px_50px_rgba(0,0,0,0.5)] border border-brand/20">
         <NavButton active={screen === 'dashboard'} onClick={() => setScreen('dashboard')} icon={<Home size={24} />} label="الرئيسية" />
         <motion.button 
           whileTap={{ scale: 0.9 }}
           onClick={() => setShowAddMenu(true)}
-          className="bg-emerald-500 text-slate-900 w-20 h-20 rounded-[2.5rem] flex items-center justify-center -mt-16 shadow-[0_0_30px_rgba(16,185,129,0.4)] relative active:scale-95 transition-all group border-4 border-[#0a1510]"
+          className="bg-brand text-slate-900 w-20 h-20 rounded-[2.5rem] flex items-center justify-center -mt-16 shadow-[0_0_30px_rgba(var(--theme-brand-rgb),0.4)] relative active:scale-95 transition-all group border-4 border-surface-deep"
         >
-          <div className="absolute inset-0 bg-emerald-400 rounded-[2.5rem] blur-xl opacity-0 group-hover:opacity-40 transition-opacity"></div>
+          <div className="absolute inset-0 bg-brand/40 rounded-[2.5rem] blur-xl opacity-0 group-hover:opacity-40 transition-opacity"></div>
           <Plus size={36} className="relative z-10 font-black" />
         </motion.button>
         <NavButton active={screen === 'settings'} onClick={() => setScreen('settings')} icon={<Settings size={24} />} label="المزيد" />
@@ -817,7 +842,7 @@ export default function App() {
       {/* Add Item Menu Modal */}
       <Modal isOpen={showAddMenu} onClose={() => setShowAddMenu(false)}>
         <div className="text-center">
-          <h3 className="text-2xl font-black mb-6 text-emerald-50">ماذا تريد أن تضيف؟</h3>
+          <h3 className="text-2xl font-black mb-6 text-white">ماذا تريد أن تضيف؟</h3>
           <div className="grid grid-cols-2 gap-4">
             <button 
               onClick={() => {
@@ -825,12 +850,12 @@ export default function App() {
                 setShowAddMenu(false);
                 setScreen('add');
               }}
-              className="bg-[#122b22] p-8 rounded-[2.5rem] border border-emerald-500/20 flex flex-col items-center gap-4 hover:bg-emerald-500/10 active:scale-95 transition-all"
+              className="bg-surface-card p-8 rounded-[2.5rem] border border-brand/20 flex flex-col items-center gap-4 hover:bg-brand/10 active:scale-95 transition-all"
             >
-              <div className="bg-emerald-500/20 p-4 rounded-3xl">
-                <Package size={32} className="text-emerald-400" />
+              <div className="bg-brand/20 p-4 rounded-3xl">
+                <Package size={32} className="text-brand" />
               </div>
-              <span className="font-black text-emerald-100">إضافة منتج</span>
+              <span className="font-black text-white">إضافة منتج</span>
             </button>
             <button 
               onClick={() => {
@@ -838,18 +863,25 @@ export default function App() {
                 setShowAddMenu(false);
                 setScreen('add');
               }}
-              className="bg-[#122b22] p-8 rounded-[2.5rem] border border-emerald-500/20 flex flex-col items-center gap-4 hover:bg-emerald-500/10 active:scale-95 transition-all"
+              className="bg-surface-card p-8 rounded-[2.5rem] border border-brand/20 flex flex-col items-center gap-4 hover:bg-brand/10 active:scale-95 transition-all"
             >
-              <div className="bg-emerald-400 p-4 rounded-3xl">
+              <div className="bg-brand p-4 rounded-3xl">
                 <Database size={32} className="text-slate-900" />
               </div>
-              <span className="font-black text-emerald-100">إضافة صندوق</span>
+              <span className="font-black text-white">إضافة صندوق</span>
             </button>
           </div>
         </div>
       </Modal>
 
       <RateModal isOpen={showRateModal} onClose={() => setShowRateModal(false)} />
+
+      <ThemeModal 
+        isOpen={showThemeModal} 
+        onClose={() => setShowThemeModal(false)} 
+        currentTheme={theme} 
+        onSelect={handleThemeChange} 
+      />
 
       {/* Subscription Modal */}
       <Modal isOpen={showProModal} onClose={() => setShowProModal(false)}>
@@ -858,10 +890,10 @@ export default function App() {
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
             onClick={() => setShowProModal(false)}
-            className="absolute right-0 top-0 bg-emerald-500/10 p-2.5 rounded-xl backdrop-blur-md ring-1 ring-emerald-500/30 hover:bg-emerald-500/20 transition-all group flex items-center gap-2"
+            className="absolute right-0 top-0 bg-brand/10 p-2.5 rounded-xl backdrop-blur-md ring-1 ring-brand/30 hover:bg-brand/20 transition-all group flex items-center gap-2"
           >
-            <ArrowRight className="text-emerald-400 group-hover:-translate-x-1 transition-transform" size={18} />
-            <span className="text-[10px] font-black uppercase text-emerald-400">رجوع</span>
+            <ArrowRight className="text-brand group-hover:-translate-x-1 transition-transform" size={18} />
+            <span className="text-[10px] font-black uppercase text-brand">رجوع</span>
           </motion.button>
         </div>
 
@@ -870,46 +902,46 @@ export default function App() {
             <Crown size={40} className="fill-white" />
           </div>
           <h3 className="text-2xl font-black mb-1 text-amber-400">خطط تطبيق ربحي</h3>
-          <p className="text-xs text-emerald-100/50 mb-6">اختر الخطة المناسبة لحجم تجارتك</p>
+          <p className="text-xs text-white/50 mb-6">اختر الخطة المناسبة لحجم تجارتك</p>
 
           <div className="space-y-4 max-h-[60vh] overflow-y-auto px-1 pb-4">
             {activatingTier ? (
               <motion.div 
                 initial={{ opacity: 0, scale: 0.9 }}
                 animate={{ opacity: 1, scale: 1 }}
-                className="bg-[#122b22] p-6 rounded-[2.5rem] border border-emerald-500/20 text-center"
+                className="bg-surface-card p-6 rounded-[2.5rem] border border-brand/20 text-center"
               >
-                <h4 className="text-emerald-400 font-black mb-4">تفعيل خطة {activatingTier === SubscriptionTier.PREMIUM ? 'بريميوم' : activatingTier === SubscriptionTier.GOLD ? 'جولد' : 'بيسك'}</h4>
+                <h4 className="text-brand font-black mb-4">تفعيل خطة {activatingTier === SubscriptionTier.PREMIUM ? 'بريميوم' : activatingTier === SubscriptionTier.GOLD ? 'جولد' : 'بيسك'}</h4>
                 <input 
                   type="password"
                   placeholder="أدخل كود التفعيل"
                   value={activationInput}
                   onChange={(e) => setActivationInput(e.target.value)}
-                  className="w-full bg-[#0a1510] border-2 border-emerald-900 shadow-inner rounded-2xl p-4 text-center text-2xl font-black mb-4 tracking-widest text-white outline-none focus:border-emerald-500"
+                  className="w-full bg-surface-deep border-2 border-accent-border shadow-inner rounded-2xl p-4 text-center text-2xl font-black mb-4 tracking-widest text-white outline-none focus:border-brand"
                 />
                 <div className="flex gap-3">
                   <button 
                     onClick={() => handleUnlockPro(activatingTier, activationInput)}
-                    className="flex-1 bg-emerald-500 text-slate-900 font-black py-4 rounded-2xl shadow-lg"
+                    className="flex-1 bg-brand text-slate-900 font-black py-4 rounded-2xl shadow-lg"
                   >تأكيد</button>
                   <button 
                     onClick={() => {
                       setActivatingTier(null);
                       setActivationInput('');
                     }}
-                    className="flex-1 bg-white/5 text-emerald-100/50 font-black py-4 rounded-2xl"
+                    className="flex-1 bg-white/5 text-white/50 font-black py-4 rounded-2xl"
                   >إلغاء</button>
                 </div>
               </motion.div>
             ) : (
               <>
                 {/* Premium */}
-                <div className={`p-5 rounded-[2rem] border-2 text-right transition-all ${tier === SubscriptionTier.PREMIUM ? 'bg-amber-500/10 border-amber-500 shadow-lg' : 'bg-[#0a1510] border-emerald-900/20'}`}>
+                <div className={`p-5 rounded-[2rem] border-2 text-right transition-all ${tier === SubscriptionTier.PREMIUM ? 'bg-amber-500/10 border-amber-500 shadow-lg' : 'bg-surface-deep border-accent-border'}`}>
                   <div className="flex justify-between items-start mb-2">
                     <span className="bg-amber-500 text-slate-900 px-3 py-1 rounded-full text-[10px] font-black">بريميوم (كامل)</span>
                     <span className="text-lg font-black">25,000 د.ع</span>
                   </div>
-                  <ul className="text-[11px] space-y-2 text-emerald-100/60 font-bold">
+                  <ul className="text-[11px] space-y-2 text-white/60 font-bold">
                     <li>• عدد غير محدود من المنتجات</li>
                     <li>• تقارير ربحية تفصيلية</li>
                     <li>• أولوية في الدعم الفني</li>
@@ -923,12 +955,12 @@ export default function App() {
                 </div>
 
                 {/* Basic */}
-                <div className={`p-5 rounded-[2rem] border-2 text-right transition-all ${tier === SubscriptionTier.BASIC ? 'bg-blue-500/10 border-blue-500 shadow-lg' : 'bg-[#0a1510] border-emerald-900/20'}`}>
+                <div className={`p-5 rounded-[2rem] border-2 text-right transition-all ${tier === SubscriptionTier.BASIC ? 'bg-blue-500/10 border-blue-500 shadow-lg' : 'bg-surface-deep border-accent-border'}`}>
                   <div className="flex justify-between items-start mb-2">
                     <span className="bg-blue-500 text-white px-3 py-1 rounded-full text-[10px] font-black">بيسك (الأكثر طلباً)</span>
                     <span className="text-lg font-black">15,000 د.ع</span>
                   </div>
-                  <ul className="text-[11px] space-y-2 text-emerald-100/60 font-bold">
+                  <ul className="text-[11px] space-y-2 text-white/60 font-bold">
                     <li>• حد أقصى 20 منتج</li>
                     <li>• إحصائيات متقدمة</li>
                     <li>• دعم فني عبر الواتساب</li>
@@ -942,12 +974,12 @@ export default function App() {
                 </div>
 
                 {/* Gold */}
-                <div className={`p-5 rounded-[2rem] border-2 text-right transition-all ${tier === SubscriptionTier.GOLD ? 'bg-yellow-500/10 border-yellow-500 shadow-lg' : 'bg-[#0a1510] border-emerald-900/20'}`}>
+                <div className={`p-5 rounded-[2rem] border-2 text-right transition-all ${tier === SubscriptionTier.GOLD ? 'bg-yellow-500/10 border-yellow-500 shadow-lg' : 'bg-surface-deep border-accent-border'}`}>
                   <div className="flex justify-between items-start mb-2">
                     <span className="bg-yellow-500 text-slate-900 px-3 py-1 rounded-full text-[10px] font-black">جولد (متوسط)</span>
                     <span className="text-lg font-black">20,000 د.ع</span>
                   </div>
-                  <ul className="text-[11px] space-y-2 text-emerald-100/60 font-bold">
+                  <ul className="text-[11px] space-y-2 text-white/60 font-bold">
                     <li>• حد أقصى 100 منتج</li>
                     <li>• إحصائيات تقويمية</li>
                     <li>• دعم سريع</li>
@@ -961,12 +993,12 @@ export default function App() {
                 </div>
 
                 {/* Free */}
-                <div className={`p-5 rounded-[2rem] border-2 text-right transition-all ${tier === SubscriptionTier.FREE ? 'bg-emerald-500/10 border-emerald-500 shadow-lg' : 'bg-[#0a1510] border-emerald-900/20'}`}>
+                <div className={`p-5 rounded-[2rem] border-2 text-right transition-all ${tier === SubscriptionTier.FREE ? 'bg-brand/10 border-brand shadow-lg' : 'bg-surface-deep border-accent-border'}`}>
                   <div className="flex justify-between items-start mb-2">
-                    <span className="bg-emerald-500 text-slate-900 px-3 py-1 rounded-full text-[10px] font-black">مجاني</span>
+                    <span className="bg-brand text-slate-900 px-3 py-1 rounded-full text-[10px] font-black">مجاني</span>
                     <span className="text-lg font-black">0 د.ع</span>
                   </div>
-                  <ul className="text-[11px] space-y-2 text-emerald-100/60 font-bold">
+                  <ul className="text-[11px] space-y-2 text-white/60 font-bold">
                     <li>• حد أقصى 3 منتجات</li>
                     <li>• متابعة أرباح أساسية</li>
                     <li>• دعم العملات المتعددة</li>
@@ -976,15 +1008,15 @@ export default function App() {
             )}
           </div>
           
-          <div className="mt-4 p-4 bg-[#122b22]/50 rounded-2xl border border-emerald-900/30">
-            <p className="text-[10px] text-emerald-500/50 mb-2 font-black">للحصول على كود التفعيل تواصل معنا</p>
+          <div className="mt-4 p-4 bg-surface-card border border-accent-border rounded-2xl shadow-inner">
+            <p className="text-[10px] text-brand/50 mb-2 font-black uppercase tracking-widest leading-none">للحصول على كود التفعيل تواصل معنا</p>
             <a 
               href={getWhatsAppUrl("مرحباً، أريد شراء كود تفعيل لتطبيق ربحي")}
               target="_blank"
               rel="noreferrer"
-              className="flex items-center justify-center gap-2 text-white font-black text-sm bg-emerald-500/10 py-3 rounded-xl border border-emerald-500/20"
+              className="flex items-center justify-center gap-2 text-white font-black text-sm bg-brand/10 py-3 rounded-xl border border-brand/20 hover:bg-brand/20 transition-all"
             >
-              <MessageSquare size={16} className="fill-emerald-500 text-white" />
+              <MessageSquare size={16} className="fill-brand text-brand" />
               <span>{WHATSAPP_CONTACT_NAME}</span>
             </a>
           </div>
@@ -998,7 +1030,7 @@ export default function App() {
             <X size={40} />
           </div>
           <h3 className="text-2xl font-black mb-2 text-white">تأكيد الحذف</h3>
-          <p className="text-sm text-emerald-100/60 font-bold mb-8">
+          <p className="text-sm text-white/60 font-bold mb-8">
             هل أنت متأكد من حذف هذا المنتج؟ لا يمكن التراجع عن هذا الإجراء وسيتم مسح البيانات نهائياً.
           </p>
           
@@ -1011,7 +1043,7 @@ export default function App() {
             </button>
             <button 
               onClick={() => setConfirmDeleteId(null)}
-              className="flex-1 bg-white/5 text-emerald-100 font-black py-4 rounded-2xl border border-white/10 hover:bg-white/10 transition-colors active:scale-95"
+              className="flex-1 bg-white/5 text-white font-black py-4 rounded-2xl border border-white/10 hover:bg-white/10 transition-colors active:scale-95"
             >
               لا، تراجع
             </button>
@@ -1026,18 +1058,18 @@ export default function App() {
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
             onClick={() => setShowCurrencyModal(false)}
-            className="absolute right-0 top-0 bg-emerald-500/10 p-2.5 rounded-xl backdrop-blur-md ring-1 ring-emerald-500/30 hover:bg-emerald-500/20 transition-all group flex items-center gap-2"
+            className="absolute right-0 top-0 bg-brand/10 p-2.5 rounded-xl backdrop-blur-md ring-1 ring-brand/30 hover:bg-brand/20 transition-all group flex items-center gap-2"
           >
-            <ArrowRight className="text-emerald-400 group-hover:-translate-x-1 transition-transform" size={18} />
-            <span className="text-[10px] font-black uppercase text-emerald-400">رجوع</span>
+            <ArrowRight className="text-brand group-hover:-translate-x-1 transition-transform" size={18} />
+            <span className="text-[10px] font-black uppercase text-brand">رجوع</span>
           </motion.button>
         </div>
 
         <div className="flex items-center gap-3 mb-6 px-2">
-           <div className="w-10 h-10 bg-emerald-500 text-slate-900 rounded-2xl flex items-center justify-center shadow-lg shadow-emerald-500/20">
+           <div className="w-10 h-10 bg-brand text-slate-900 rounded-2xl flex items-center justify-center shadow-lg shadow-brand/20">
              <ArrowRightLeft size={20} />
            </div>
-           <h3 className="text-xl font-black text-emerald-50">اختر العملة</h3>
+           <h3 className="text-xl font-black text-white">اختر العملة</h3>
         </div>
         <div className="grid grid-cols-1 gap-3 max-h-[60vh] overflow-y-auto px-1">
           {Object.values(Currency).map((c) => (
@@ -1049,23 +1081,23 @@ export default function App() {
               }}
               className={`flex items-center justify-between p-5 rounded-3xl border-2 transition-all ${
                 currency === c 
-                  ? 'bg-emerald-500/10 border-emerald-500 shadow-xl translate-y-[-2px]' 
-                  : 'bg-[#0a1510] border-emerald-900/30 hover:border-emerald-500/40 shadow-sm'
+                  ? 'bg-brand/10 border-brand shadow-xl translate-y-[-2px]' 
+                  : 'bg-surface-deep border-accent-border hover:border-brand/40 shadow-sm'
               }`}
             >
               <div className="flex items-center gap-4 text-right">
-                <div className={`w-12 h-12 rounded-2xl flex items-center justify-center text-xl font-black ${currency === c ? 'bg-emerald-500 text-slate-900' : 'bg-emerald-900/20 text-emerald-500'}`}>
+                <div className={`w-12 h-12 rounded-2xl flex items-center justify-center text-xl font-black ${currency === c ? 'bg-brand text-slate-900' : 'bg-brand/10 text-brand'}`}>
                   {CURRENCY_SYMBOLS[c]}
                 </div>
                 <div>
-                  <span className={`block font-black text-lg leading-none mb-1 ${currency === c ? 'text-white' : 'text-emerald-100/70'}`}>
+                  <span className={`block font-black text-lg leading-none mb-1 ${currency === c ? 'text-white' : 'text-white/70'}`}>
                     {CURRENCY_NAMES[c]}
                   </span>
-                  <span className="text-[10px] text-emerald-500/40 font-bold uppercase tracking-widest">{c}</span>
+                  <span className="text-[10px] text-brand/40 font-bold uppercase tracking-widest">{c}</span>
                 </div>
               </div>
               {currency === c && (
-                <div className="w-6 h-6 bg-emerald-500 text-slate-900 rounded-full flex items-center justify-center">
+                <div className="w-6 h-6 bg-brand text-slate-900 rounded-full flex items-center justify-center">
                   <Plus size={12} className="rotate-45" />
                 </div>
               )}
@@ -1088,11 +1120,11 @@ function RateModal({ isOpen, onClose }: { isOpen: boolean, onClose: () => void }
       <div className="text-center py-4 rtl" dir="rtl">
         {!submitted ? (
           <>
-            <div className="w-24 h-24 bg-amber-500/10 rounded-[2.5rem] flex items-center justify-center mx-auto mb-6 border border-amber-500/20 shadow-xl">
-              <Star size={44} className="text-amber-500 fill-amber-500" />
+            <div className="w-24 h-24 bg-brand/10 rounded-[2.5rem] flex items-center justify-center mx-auto mb-6 border border-brand/20 shadow-xl">
+              <Star size={44} className="text-brand fill-brand" />
             </div>
             <h3 className="text-2xl font-black mb-2 text-white">ما هو تقييمك للتطبيق؟</h3>
-            <p className="text-emerald-500/60 text-[10px] font-black mb-8 uppercase tracking-[0.2em] leading-none">رأيك يهمنا لتطوير التطبيق</p>
+            <p className="text-brand/60 text-[10px] font-black mb-8 uppercase tracking-[0.2em] leading-none">رأيك يهمنا لتطوير التطبيق</p>
             
             <div className="flex justify-center gap-3 mb-10">
               {[1, 2, 3, 4, 5].map((s) => (
@@ -1105,7 +1137,7 @@ function RateModal({ isOpen, onClose }: { isOpen: boolean, onClose: () => void }
                 >
                   <Star 
                     size={40} 
-                    className={`${s <= stars ? 'text-amber-500 fill-amber-500' : 'text-emerald-900/40'} transition-all duration-300 drop-shadow-[0_0_15_rgba(245,158,11,0.2)]`} 
+                    className={`${s <= stars ? 'text-brand fill-brand' : 'text-surface-deep/40'} transition-all duration-300 drop-shadow-[0_0_15_rgba(var(--theme-brand-rgb),0.2)]`} 
                   />
                 </motion.button>
               ))}
@@ -1116,7 +1148,7 @@ function RateModal({ isOpen, onClose }: { isOpen: boolean, onClose: () => void }
                 if (stars > 0) setSubmitted(true);
               }}
               disabled={stars === 0}
-              className="w-full bg-emerald-500 text-slate-900 font-black py-6 rounded-[2rem] shadow-2xl shadow-emerald-500/20 disabled:opacity-30 disabled:cursor-not-allowed transition-all active:scale-95 text-lg"
+              className="w-full bg-brand text-slate-900 font-black py-6 rounded-[2rem] shadow-2xl shadow-brand/20 disabled:opacity-30 disabled:cursor-not-allowed transition-all active:scale-95 text-lg"
             >
               إرسال التقييم
             </button>
@@ -1127,18 +1159,18 @@ function RateModal({ isOpen, onClose }: { isOpen: boolean, onClose: () => void }
             animate={{ scale: 1, opacity: 1 }}
             className="py-10"
           >
-            <div className="w-24 h-24 bg-emerald-500/10 rounded-[2.5rem] flex items-center justify-center mx-auto mb-8 border border-amber-500/20">
-              <TrendingUp size={48} className="text-emerald-500" />
+            <div className="w-24 h-24 bg-brand/10 rounded-[2.5rem] flex items-center justify-center mx-auto mb-8 border border-brand/20">
+              <TrendingUp size={48} className="text-brand" />
             </div>
             <h3 className="text-3xl font-black mb-4 text-white">شكراً لك!</h3>
-            <p className="text-emerald-100/60 font-black text-sm mb-10 leading-relaxed">
-              نشكرك على تقييمك بـ <span className="text-amber-500">{stars} نجوم</span>. 
+            <p className="text-white/60 font-black text-sm mb-10 leading-relaxed">
+              نشكرك على تقييمك بـ <span className="text-brand">{stars} نجوم</span>. 
               <br />
               هذا يساعدنا على تحسين تطبيق ربحي باستمرار.
             </p>
             <button 
               onClick={onClose}
-              className="w-full bg-slate-900 text-white font-black py-5 rounded-[2rem] border border-emerald-900/30 active:scale-95 transition-all text-md"
+              className="w-full bg-slate-900 text-white font-black py-5 rounded-[2rem] border border-accent-border active:scale-95 transition-all text-md"
             >
               إغلاق
             </button>
@@ -1184,7 +1216,7 @@ function ProfitTicker({ products, formatCurrency }: { products: Product[], forma
   const displayItems = [...tickerItems, ...tickerItems, ...tickerItems];
 
   return (
-    <div className="relative overflow-hidden w-full py-2 -mx-4 px-4 bg-emerald-500/5 border-y border-emerald-500/10 mb-4 font-sans mask-fade-edges">
+    <div className="relative overflow-hidden w-full py-2 -mx-4 px-4 bg-brand/5 border-y border-accent-border mb-4 font-sans mask-fade-edges">
       <div className="flex">
         <motion.div 
           animate={{ x: ["0%", "-33.33%"] }}
@@ -1197,14 +1229,14 @@ function ProfitTicker({ products, formatCurrency }: { products: Product[], forma
         >
           {displayItems.map((item, idx) => (
             <div key={idx} className="flex items-center gap-3">
-              <span className="text-[11px] font-black text-emerald-300 uppercase tracking-tight">أرباح {item.name}</span>
+              <span className="text-[11px] font-black text-brand/60 uppercase tracking-tight">أرباح {item.name}</span>
               <div className="flex items-center gap-1.5 bg-white/5 px-2 py-0.5 rounded-lg border border-white/5">
                 <span className="text-[11px] font-black text-white">{formatCurrency(item.profit)}</span>
-                {item.trend === 'up' && <TrendingUp size={10} className="text-emerald-400 stroke-[3px]" />}
+                {item.trend === 'up' && <TrendingUp size={10} className="text-brand stroke-[3px]" />}
                 {item.trend === 'down' && <TrendingDown size={10} className="text-red-400 stroke-[3px]" />}
                 {item.trend === 'neutral' && <Minus size={10} className="text-slate-500/40" />}
               </div>
-              <span className="text-emerald-500/20 px-2">•</span>
+              <span className="text-brand/20 px-2">•</span>
             </div>
           ))}
         </motion.div>
@@ -1223,14 +1255,14 @@ function SummaryCard({ icon, label, value, onClick, primary }: { icon: any, labe
     <button 
       onClick={onClick}
       disabled={!onClick}
-      className={`${primary ? 'bg-emerald-500' : 'bg-gradient-to-br from-[#122b22] to-[#0a1510]'} p-6 rounded-[2rem] shadow-2xl border ${primary ? 'border-white/20' : 'border-emerald-500/20'} flex flex-col justify-between h-36 group hover:border-emerald-500/40 transition-all relative overflow-hidden text-right w-full disabled:cursor-default`}
+      className={`${primary ? 'bg-brand' : 'bg-gradient-to-br from-surface-card to-surface-deep'} p-6 rounded-[2rem] shadow-2xl border ${primary ? 'border-white/20' : 'border-brand/20'} flex flex-col justify-between h-36 group hover:border-brand/40 transition-all relative overflow-hidden text-right w-full disabled:cursor-default`}
     >
       <div className="absolute top-0 right-0 w-16 h-16 bg-white/5 rounded-full -mr-8 -mt-8 group-hover:scale-150 transition-transform duration-500"></div>
-      <span className={`relative z-10 ${primary ? 'text-white' : 'text-emerald-400'} text-[10px] font-black uppercase tracking-widest flex items-center gap-1.5 leading-none mb-4`}>
+      <span className={`relative z-10 ${primary ? 'text-slate-900' : 'text-brand'} text-[10px] font-black uppercase tracking-widest flex items-center gap-1.5 leading-none mb-4`}>
         {icon}
         {label}
       </span>
-      <span className={`relative z-10 text-2xl font-black ${primary ? 'text-white' : 'text-emerald-50'} tracking-tight leading-none overflow-hidden text-ellipsis truncate`}>{value}</span>
+      <span className={`relative z-10 text-2xl font-black ${primary ? 'text-slate-900' : 'text-white'} tracking-tight leading-none overflow-hidden text-ellipsis truncate`}>{value}</span>
     </button>
   );
 }
@@ -1272,14 +1304,14 @@ function ProductForm({ onAdd, onUpdate, onDelete, editingProduct, cancelEdit, cu
     <div className="space-y-6">
       <div className="flex items-center justify-between px-2">
         <div className="flex items-center gap-3">
-          <div className="w-12 h-12 bg-emerald-500 text-white rounded-[1.25rem] flex items-center justify-center shadow-[0_0_15px_rgba(16,185,129,0.4)]">
+          <div className="w-12 h-12 bg-brand text-slate-900 rounded-[1.25rem] flex items-center justify-center shadow-[0_0_15px_rgba(var(--theme-brand-rgb),0.4)]">
             <Plus size={24} className={editingProduct ? "rotate-45" : ""} />
           </div>
           <div>
-            <h2 className="text-2xl font-black text-emerald-100 leading-none mb-1">
+            <h2 className="text-2xl font-black text-white leading-none mb-1">
               {editingProduct ? (isBox ? 'تعديل الصندوق' : 'تعديل المنتج') : (isBox ? 'إضافة صندوق' : 'إضافة منتج')}
             </h2>
-            <p className="text-[10px] text-emerald-500/60 font-bold uppercase tracking-widest">
+            <p className="text-[10px] text-brand/60 font-bold uppercase tracking-widest">
               {isBox ? 'أدخل تفاصيل الصندوق بدقة' : 'أدخل تفاصيل المنتج بدقة'}
             </p>
           </div>
@@ -1294,7 +1326,7 @@ function ProductForm({ onAdd, onUpdate, onDelete, editingProduct, cancelEdit, cu
             </button>
             <button 
               onClick={cancelEdit}
-              className="text-[10px] font-black uppercase tracking-widest text-emerald-100/50 bg-white/5 px-4 py-2 rounded-xl"
+              className="text-[10px] font-black uppercase tracking-widest text-white/50 bg-white/5 px-4 py-2 rounded-xl"
             >
               إلغاء 
             </button>
@@ -1302,7 +1334,7 @@ function ProductForm({ onAdd, onUpdate, onDelete, editingProduct, cancelEdit, cu
         )}
       </div>
 
-      <div className="bg-[#122b22]/40 p-8 rounded-[2.5rem] shadow-2xl border border-emerald-900/30 space-y-6">
+      <div className="bg-surface-card/40 p-8 rounded-[2.5rem] shadow-2xl border border-accent-border space-y-6">
         <InputField 
           label={isBox ? "اسم الصندوق" : "اسم المنتج"} 
           type="text" 
@@ -1383,33 +1415,33 @@ function ProductForm({ onAdd, onUpdate, onDelete, editingProduct, cancelEdit, cu
       {/* Real-time Calculation Result */}
       <motion.div 
         layout
-        className="bg-emerald-900 text-white p-8 rounded-[2.5rem] shadow-2xl relative overflow-hidden space-y-4"
+        className="bg-brand text-slate-800 p-8 rounded-[2.5rem] shadow-2xl relative overflow-hidden space-y-4"
       >
         <div className="absolute top-0 left-0 w-24 h-24 bg-white/10 rounded-full -ml-12 -mt-12 blur-2xl"></div>
         
-        <div className="flex divide-x divide-x-reverse divide-white/10 relative z-10">
+        <div className="flex divide-x divide-x-reverse divide-black/10 relative z-10">
           <div className="flex-1 text-center pr-2">
-            <span className="text-[10px] text-emerald-400 font-black uppercase tracking-[0.2em] block mb-2 leading-none">
+            <span className="text-[10px] text-black/50 font-black uppercase tracking-[0.2em] block mb-2 leading-none">
               {isBox ? 'سعر القطعة' : 'ربح القطعة'}
             </span>
-            <span className={`text-xl font-black drop-shadow-md text-white`}>
+            <span className={`text-xl font-black drop-shadow-md text-slate-900`}>
               {formatCurrency(isBox ? piecePrice : profitPerItem)}
             </span>
           </div>
           <div className="flex-1 text-center pl-2">
-            <span className="text-[10px] text-amber-400 font-black uppercase tracking-[0.2em] block mb-2 leading-none">
+            <span className="text-[10px] text-black/50 font-black uppercase tracking-[0.2em] block mb-2 leading-none">
               {isBox ? 'الربح للقطعة' : 'الربح الكلي'}
             </span>
-            <span className={`text-xl font-black drop-shadow-md text-amber-400`}>
+            <span className={`text-xl font-black drop-shadow-md text-white`}>
               {formatCurrency(isBox ? profitPerItem : totalProfit)}
             </span>
           </div>
         </div>
 
         {isBox && (
-          <div className="pt-4 border-t border-white/10 text-center relative z-10">
-            <span className="text-[10px] text-emerald-300 font-black uppercase tracking-[0.2em] block mb-1 leading-none">الربح الكلي للصندوق</span>
-            <span className="text-3xl font-black text-white">{formatCurrency(totalProfit)}</span>
+          <div className="pt-4 border-t border-black/10 text-center relative z-10">
+            <span className="text-[10px] text-black/50 font-black uppercase tracking-[0.2em] block mb-1 leading-none">الربح الكلي للصندوق</span>
+            <span className="text-3xl font-black text-slate-900">{formatCurrency(totalProfit)}</span>
           </div>
         )}
       </motion.div>
@@ -1417,7 +1449,7 @@ function ProductForm({ onAdd, onUpdate, onDelete, editingProduct, cancelEdit, cu
       <button
         disabled={!form.name || form.purchasePrice <= 0 || form.sellingPrice <= 0}
         onClick={handleSubmit}
-        className="w-full bg-slate-900 text-white font-black py-6 rounded-[2rem] shadow-2xl shadow-slate-900/20 disabled:opacity-30 disabled:cursor-not-allowed hover:bg-slate-800 active:scale-95 transition-all text-lg border border-emerald-900/30"
+        className="w-full bg-brand text-slate-900 font-black py-6 rounded-[2rem] shadow-2xl shadow-brand/20 disabled:opacity-30 disabled:cursor-not-allowed hover:opacity-90 active:scale-95 transition-all text-lg border border-white/10"
       >
         {editingProduct ? 'حفظ التغييرات' : (isBox ? 'حفظ الصندوق' : 'حفظ المنتج')}
       </button>
@@ -1428,14 +1460,14 @@ function ProductForm({ onAdd, onUpdate, onDelete, editingProduct, cancelEdit, cu
 function InputField({ label, type, value, onChange, placeholder, readOnly }: { label: string, type: string, value: any, onChange: (v: any) => void, placeholder?: string, readOnly?: boolean }) {
   return (
     <div className="space-y-2">
-      <label className="text-[11px] font-black text-emerald-500/50 mr-2 uppercase tracking-widest block leading-none">{label}</label>
+      <label className="text-[11px] font-black text-brand/50 mr-2 uppercase tracking-widest block leading-none">{label}</label>
       <input
         type={type}
         readOnly={readOnly}
         value={value === 0 && type === 'number' ? '' : value}
         onChange={(e) => !readOnly && onChange(e.target.value)}
         placeholder={placeholder}
-        className={`w-full bg-[#0a1510] border border-emerald-900/50 rounded-2xl p-4 focus:border-emerald-500 focus:bg-[#0d1f18] focus:outline-none transition-all font-bold text-white placeholder:text-emerald-900 shadow-inner ${readOnly ? 'opacity-60 cursor-not-allowed bg-emerald-900/10' : ''}`}
+        className={`w-full bg-surface-deep border border-accent-border rounded-2xl p-4 focus:border-brand focus:bg-surface-card/60 focus:outline-none transition-all font-bold text-white placeholder:text-white/10 shadow-inner ${readOnly ? 'opacity-60 cursor-not-allowed bg-brand/5' : ''}`}
       />
     </div>
   );
@@ -1445,9 +1477,9 @@ function NavButton({ active, icon, label, onClick }: { active: boolean, icon: an
   return (
     <button 
       onClick={onClick}
-      className={`flex flex-col items-center gap-1.5 transition-all active:scale-90 ${active ? 'text-emerald-400' : 'text-emerald-900 group-hover:text-emerald-600'}`}
+      className={`flex flex-col items-center gap-1.5 transition-all active:scale-90 ${active ? 'text-brand' : 'text-slate-500 hover:text-brand/60'}`}
     >
-      <div className={`p-2 rounded-xl transition-all ${active ? 'bg-emerald-500/10' : 'group-hover:bg-emerald-500/5'}`}>
+      <div className={`p-2 rounded-xl transition-all ${active ? 'bg-brand/10' : 'hover:bg-brand/5'}`}>
         {icon}
       </div>
       <span className={`text-[10px] font-black uppercase tracking-widest ${active ? 'opacity-100' : 'opacity-30'}`}>{label}</span>
@@ -1455,7 +1487,7 @@ function NavButton({ active, icon, label, onClick }: { active: boolean, icon: an
         {active && (
           <motion.span 
             layoutId="nav-indicator"
-            className="w-5 h-1 bg-emerald-500 rounded-full mt-1 shadow-[0_0_10px_rgba(16,185,129,0.5)]"
+            className="w-5 h-1 bg-brand rounded-full mt-1 shadow-[0_0_10px_rgba(var(--theme-brand-rgb),0.5)]"
           />
         )}
       </AnimatePresence>
@@ -1467,21 +1499,21 @@ function SettingsButton({ icon, label, subLabel, onClick, href }: { icon: any, l
   const content = (
     <>
       <div className="flex items-center gap-5 text-right">
-        <div className="w-14 h-14 rounded-2xl bg-[#0a1510] border border-emerald-900/50 flex items-center justify-center transition-all group-hover:bg-emerald-500 group-hover:text-white shadow-inner">
+        <div className="w-14 h-14 rounded-2xl bg-surface-deep border border-accent-border flex items-center justify-center transition-all group-hover:bg-brand group-hover:text-slate-900 shadow-inner">
           {icon}
         </div>
         <div>
           <span className="block font-black text-white text-lg leading-tight mb-1">{label}</span>
-          {subLabel && <span className="text-[10px] text-emerald-500/50 font-bold uppercase tracking-[0.15em] leading-none">{subLabel}</span>}
+          {subLabel && <span className="text-[10px] text-slate-500 font-bold uppercase tracking-[0.15em] leading-none">{subLabel}</span>}
         </div>
       </div>
-      <div className="w-10 h-10 rounded-full bg-[#0a1510] flex items-center justify-center text-emerald-900 group-hover:bg-emerald-500/20 group-hover:text-emerald-400 group-hover:translate-x-[-4px] transition-all border border-emerald-900/30">
+      <div className="w-10 h-10 rounded-full bg-surface-deep flex items-center justify-center text-slate-600 group-hover:bg-brand/20 group-hover:text-brand group-hover:translate-x-[-4px] transition-all border border-accent-border">
         <ChevronLeft size={20} />
       </div>
     </>
   );
 
-  const className = "w-full bg-[#122b22]/30 p-6 rounded-3xl shadow-xl border border-emerald-900/20 flex items-center justify-between group active:scale-[0.98] transition-transform hover:border-emerald-500/40 hover:bg-[#122b22]/50";
+  const className = "w-full bg-surface-card/30 p-6 rounded-3xl shadow-xl border border-accent-border flex items-center justify-between group active:scale-[0.98] transition-transform hover:border-brand/40 hover:bg-surface-card/50";
 
   if (href) {
     return (
@@ -1495,6 +1527,83 @@ function SettingsButton({ icon, label, subLabel, onClick, href }: { icon: any, l
     <button onClick={onClick} className={className}>
       {content}
     </button>
+  );
+}
+
+function ThemeModal({ isOpen, onClose, currentTheme, onSelect }: { 
+  isOpen: boolean, 
+  onClose: () => void, 
+  currentTheme: Theme, 
+  onSelect: (t: Theme) => void 
+}) {
+  const themes = [
+    { id: Theme.EMERALD, name: 'الزمردي النضر', color: '#10b981', bg: '#0a1510' },
+    { id: Theme.MIDNIGHT, name: 'الليلي الملكي', color: '#3b82f6', bg: '#0f172a' },
+    { id: Theme.AMETHYST, name: 'بنفسج الجمشت', color: '#a855f7', bg: '#0c0a09' },
+    { id: Theme.ONYX, name: 'العقيق والذهب', color: '#fbbf24', bg: '#000000' },
+  ];
+
+  if (!isOpen) return null;
+
+  return (
+    <Modal isOpen={isOpen} onClose={onClose}>
+      <div className="relative mb-6">
+        <motion.button 
+          whileHover={{ scale: 1.05 }}
+          whileTap={{ scale: 0.95 }}
+          onClick={onClose}
+          className="absolute right-0 top-0 bg-brand/10 p-2.5 rounded-xl backdrop-blur-md ring-1 ring-brand/30 hover:bg-brand/20 transition-all group flex items-center gap-2"
+        >
+          <ArrowRight className="text-brand group-hover:-translate-x-1 transition-transform" size={18} />
+          <span className="text-[10px] font-black uppercase text-brand">رجوع</span>
+        </motion.button>
+      </div>
+
+      <div className="flex items-center gap-3 mb-6 px-2">
+         <div className="w-10 h-10 bg-brand text-slate-900 rounded-2xl flex items-center justify-center shadow-lg shadow-brand/20">
+           <Palette size={20} />
+         </div>
+         <h3 className="text-xl font-black text-white">سمات البرنامج</h3>
+      </div>
+
+      <div className="grid grid-cols-1 gap-3 max-h-[60vh] overflow-y-auto px-1">
+        {themes.map((t) => (
+          <button
+            key={t.id}
+            onClick={() => {
+              onSelect(t.id);
+            }}
+            className={`flex items-center justify-between p-5 rounded-3xl border-2 transition-all ${
+              currentTheme === t.id 
+                ? 'bg-brand/10 border-brand shadow-xl' 
+                : 'bg-surface-deep border-accent-border hover:border-brand/40 shadow-sm'
+            }`}
+          >
+            <div className="flex items-center gap-4 text-right">
+              <div 
+                className="w-12 h-12 rounded-2xl flex items-center justify-center border-2 border-white/20 shadow-inner"
+                style={{ backgroundColor: t.bg }}
+              >
+                <div className="w-6 h-6 rounded-full" style={{ backgroundColor: t.color }}></div>
+              </div>
+              <div>
+                <span className={`block font-black text-lg leading-none mb-1 ${currentTheme === t.id ? 'text-white' : 'text-white/70'}`}>
+                  {t.name}
+                </span>
+                <span className="text-[10px] text-brand/60 font-bold uppercase tracking-widest">
+                  {currentTheme === t.id ? 'مفعل حالياً' : 'اضغط للتفعيل'}
+                </span>
+              </div>
+            </div>
+            {currentTheme === t.id && (
+              <div className="w-8 h-8 bg-brand rounded-2xl flex items-center justify-center shadow-lg">
+                <Crown size={16} className="text-slate-900 fill-slate-900" />
+              </div>
+            )}
+          </button>
+        ))}
+      </div>
+    </Modal>
   );
 }
 
@@ -1522,7 +1631,7 @@ function Modal({ isOpen, onClose, children }: { isOpen: boolean, onClose: () => 
                 onClose();
               }
             }}
-            className="fixed bottom-0 left-0 right-0 bg-[#0d1f18] rounded-t-[3.5rem] p-10 z-[101] shadow-[0_-20px_60px_rgba(0,0,0,0.5)] max-w-lg mx-auto border-t border-emerald-500/20 touch-none"
+            className="fixed bottom-0 left-0 right-0 bg-surface-card rounded-t-[3.5rem] p-10 z-[101] shadow-[0_-20px_60px_rgba(0,0,0,0.5)] max-w-lg mx-auto border-t border-brand/20 touch-none"
           >
             <div className="w-16 h-1.5 bg-white/10 rounded-full mx-auto mb-10"></div>
             <div className="text-white">

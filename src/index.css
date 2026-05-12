@@ -3,11 +3,45 @@
 
 @theme {
   --font-sans: "Alexandria", ui-sans-serif, system-ui, sans-serif;
-  --color-brand-emerald: #10b981;
-  --color-brand-gold: #f59e0b;
-  --color-bg-deep: #0a1510;
-  --color-bg-card: #122b22;
-  --color-border-glow: rgba(16, 185, 129, 0.2);
+  
+  --color-brand: var(--theme-brand);
+  --color-brand-glow: var(--theme-brand-glow);
+  --color-surface-deep: var(--theme-bg-deep);
+  --color-surface-card: var(--theme-bg-card);
+  --color-accent-border: var(--theme-border-glow);
+}
+
+:root {
+  /* Default: EMERALD */
+  --theme-brand: #10b981;
+  --theme-brand-glow: rgba(16, 185, 129, 0.4);
+  --theme-bg-deep: #0a1510;
+  --theme-bg-card: #122b22;
+  --theme-border-glow: rgba(16, 185, 129, 0.15);
+}
+
+[data-theme='MIDNIGHT'] {
+  --theme-brand: #3b82f6;
+  --theme-brand-glow: rgba(59, 130, 246, 0.4);
+  --theme-bg-deep: #020617;
+  --theme-bg-card: #0f172a;
+  --theme-border-glow: rgba(59, 130, 246, 0.15);
+}
+
+[data-theme='AMETHYST'] {
+  --theme-brand: #a855f7;
+  --theme-brand-glow: rgba(168, 85, 247, 0.4);
+  --theme-bg-deep: #0c0a09;
+  --theme-bg-card: #1c1917;
+  --theme-border-glow: rgba(168, 85, 247, 0.15);
+}
+
+[data-theme='ONYX'] {
+  --theme-brand: #eab308;
+  --theme-brand-glow: rgba(234, 179, 8, 0.3);
+  --theme-bg-deep: #000000;
+  --theme-bg-card: #111111;
+  --theme-border-glow: rgba(234, 179, 8, 0.15);
 }
 
 body {
