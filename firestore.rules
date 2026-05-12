@@ -1,0 +1,63 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Helper functions
+    function isSignedIn() {
+      return request.auth != null;
+    }
+    
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    // Default deny
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Connection test path
+    match /_connection_test/{docId} {
+      allow read: if true;
+    }
+
+    match /users/{userId} {
+      // Products collection
+      match /products/{productId} {
+        allow read, list: if isOwner(userId);
+        
+        allow create: if isOwner(userId) && isValidProduct(request.resource.data);
+        allow update: if isOwner(userId) && isValidProduct(request.resource.data);
+        allow delete: if isOwner(userId);
+      }
+
+      // Settings/States
+      match /settings/state {
+        allow read: if isOwner(userId);
+        allow write: if isOwner(userId) && isValidState(request.resource.data);
+      }
+    }
+
+    function isValidProduct(data) {
+      return data.keys().hasAll(['name', 'purchasePrice', 'sellingPrice', 'quantity', 'expenses', 'createdAt', 'userId'])
+        && data.name is string && data.name.size() > 0 && data.name.size() <= 100
+        && data.purchasePrice is number
+        && data.sellingPrice is number
+        && data.quantity is number && data.quantity >= 0
+        && data.expenses is number
+        && data.createdAt is number
+        && data.userId == request.auth.uid;
+    }
+
+    function isValidState(data) {
+      return data.keys().hasAll(['currency', 'tier', 'userId'])
+        && data.currency is string
+        && data.tier in ['FREE', 'BASIC', 'GOLD', 'PREMIUM']
+        && data.userId == request.auth.uid
+        && (!data.keys().contains('username') || (data.username is string && data.username.size() <= 50));
+    }
+  }
+}

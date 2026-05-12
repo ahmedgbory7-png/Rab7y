@@ -1,0 +1,6 @@
+{
+  "name": "Remix: Rabihy - ربحي",
+  "description": "حاسبة أرباح المحل - تطبيق ذكي لحساب أرباح المنتجات وتتبع المبيعات بدقة",
+  "requestFramePermissions": ["web-share"],
+  "majorCapabilities": []
+}

@@ -1,0 +1,26 @@
+@import "tailwindcss";
+@import url('https://fonts.googleapis.com/css2?family=Alexandria:wght@300;400;500;700&display=swap');
+
+@theme {
+  --font-sans: "Alexandria", ui-sans-serif, system-ui, sans-serif;
+  --color-brand-emerald: #10b981;
+  --color-brand-gold: #f59e0b;
+  --color-bg-deep: #0a1510;
+  --color-bg-card: #122b22;
+  --color-border-glow: rgba(16, 185, 129, 0.2);
+}
+
+body {
+  background-color: var(--color-bg-deep);
+  color: white;
+  direction: rtl;
+}
+
+@layer base {
+  input[type="number"]::-webkit-inner-spin-button,
+  input[type="number"]::-webkit-outer-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+  }
+}
+

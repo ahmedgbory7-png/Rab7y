@@ -1,0 +1,41 @@
+{
+  "entities": {
+    "products": {
+      "title": "Product",
+      "description": "Store items with their financial details",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "purchasePrice": { "type": "number" },
+        "sellingPrice": { "type": "number" },
+        "quantity": { "type": "number" },
+        "expenses": { "type": "number" },
+        "createdAt": { "type": "number" },
+        "userId": { "type": "string" }
+      },
+      "required": ["name", "purchasePrice", "sellingPrice", "quantity", "expenses", "userId"]
+    },
+    "userState": {
+      "title": "User State",
+      "description": "User specific settings and subscription status",
+      "type": "object",
+      "properties": {
+        "currency": { "type": "string" },
+        "tier": { "type": "string", "enum": ["FREE", "BASIC", "GOLD", "PREMIUM"] },
+        "username": { "type": "string" },
+        "userId": { "type": "string" }
+      },
+      "required": ["userId", "tier"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}/products/{productId}": {
+      "schema": "products",
+      "description": "User's individual products"
+    },
+    "/users/{userId}/settings/state": {
+      "schema": "userState",
+      "description": "User preferences and pro status"
+    }
+  }
+}
