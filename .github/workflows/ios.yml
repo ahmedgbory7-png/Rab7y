@@ -1,0 +1,39 @@
+name: Build iOS
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: macos-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Build Web Assets
+        run: npm run build
+
+      - name: Sync with Capacitor
+        run: npx cap sync ios
+
+      - name: Zip iOS Project
+        run: zip -r ios-project.zip ios/
+
+      - name: Upload iOS Project
+        uses: actions/upload-artifact@v4
+        with:
+          name: ios-xcode-project
+          path: ios-project.zip
